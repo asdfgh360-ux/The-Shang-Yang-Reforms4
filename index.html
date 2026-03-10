@@ -1,0 +1,2061 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商鞅变法 - 策略博弈版</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0d0d0d;
+      --bg-secondary: #1a1a1a;
+      --bg-card: #242424;
+      --bg-hover: #2a2a2a;
+      --border: #333333;
+      --border-highlight: #c9a86c;
+      --text-primary: #e8e6e3;
+      --text-secondary: #a0a0a0;
+      --text-muted: #666666;
+      --gold: #c9a86c;
+      --gold-light: #e8d5a3;
+      --red: #dc2626;
+      --red-dark: #991b1b;
+      --green: #22c55e;
+      --green-dark: #166534;
+      --blue: #3b82f6;
+      --purple: #a855f7;
+      --orange: #f97316;
+    }
+
+    body {
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Noto Serif SC', serif;
+    }
+
+    /* Animations */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+    @keyframes glow { 0%, 100% { box-shadow: 0 0 5px var(--gold); } 50% { box-shadow: 0 0 20px var(--gold), 0 0 40px var(--gold); } }
+    @keyframes dangerPulse { 0%, 100% { box-shadow: 0 0 5px var(--red); } 50% { box-shadow: 0 0 20px var(--red); } }
+
+    .fade-in { animation: fadeIn 0.5s ease; }
+    .slide-up { animation: slideUp 0.5s ease; }
+    .pulse { animation: pulse 2s infinite; }
+    .shake { animation: shake 0.3s ease; }
+
+    /* Intro */
+    .intro {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      background: var(--bg-primary);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 点阵背景纹理 */
+    .intro::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        radial-gradient(circle, #444 1px, transparent 1px);
+      background-size: 20px 20px;
+      animation: fadeIn 2s ease;
+      pointer-events: none;
+    }
+
+    .intro-content {
+      position: relative;
+      z-index: 1;
+      max-width: 700px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .intro-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(201, 168, 108, 0.3), rgba(201, 168, 108, 0.1));
+      border: 2px solid var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      animation: glow 3s ease-in-out infinite;
+    }
+
+    .intro-icon svg {
+      width: 40px;
+      height: 40px;
+      stroke: var(--gold);
+      fill: none;
+      stroke-width: 1.5;
+    }
+
+    .intro-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .intro-title {
+      font-size: 3.5rem;
+      color: var(--gold);
+      text-shadow: 0 0 40px rgba(201, 168, 108, 0.3);
+      margin-bottom: 12px;
+      letter-spacing: 12px;
+      font-weight: 700;
+    }
+
+    .intro-subtitle {
+      font-size: 1rem;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+    }
+
+    .intro-card {
+      background: rgba(36, 36, 36, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      width: 100%;
+    }
+
+    .intro-card p {
+      color: var(--text-secondary);
+      line-height: 2;
+      margin-bottom: 16px;
+      font-size: 0.9375rem;
+    }
+
+    .intro-card p:last-child {
+      margin-bottom: 0;
+    }
+
+    .intro-card strong {
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    .intro-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      margin-bottom: 32px;
+    }
+
+    .intro-tag {
+      padding: 10px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      transition: all 0.3s ease;
+    }
+
+    .intro-tag:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    .intro-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 48px;
+      background: linear-gradient(135deg, var(--gold), #a08050);
+      color: var(--bg-primary);
+      border: none;
+      border-radius: 8px;
+      font-size: 1.125rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: 'Noto Sans SC', sans-serif;
+    }
+
+    .intro-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(201, 168, 108, 0.4);
+    }
+
+    .intro-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* 规则说明 */
+    .intro-rules {
+      position: absolute;
+      right: 40px;
+      bottom: 40px;
+      background: rgba(36, 36, 36, 0.95);
+      border: 1px solid var(--gold);
+      border-radius: 12px;
+      padding: 20px 24px;
+      max-width: 280px;
+      z-index: 10;
+    }
+
+    .intro-rules-title {
+      font-size: 0.875rem;
+      color: var(--gold);
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .intro-rules-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .intro-rules-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .intro-rules-item span {
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    @media (max-width: 900px) {
+      .intro-rules {
+        position: relative;
+        right: auto;
+        bottom: auto;
+        margin-top: 24px;
+        max-width: 100%;
+      }
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 32px;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Noto Sans SC', sans-serif;
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, var(--gold), #a08050);
+      color: var(--bg-primary);
+    }
+
+    .btn-gold:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(201, 168, 108, 0.4);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+    }
+
+    .btn-outline:hover {
+      background: rgba(201, 168, 108, 0.1);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-large {
+      padding: 20px 48px;
+      font-size: 1.125rem;
+    }
+
+    /* Game Header */
+    .game-header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .turn-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .turn-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .turn-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--gold);
+      font-family: 'Noto Serif SC', serif;
+    }
+
+    .progress-bar {
+      width: 200px;
+      height: 8px;
+      background: var(--bg-card);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s ease;
+    }
+
+    .progress-fill.time {
+      background: linear-gradient(90deg, var(--green), var(--gold));
+    }
+
+    .progress-fill.danger {
+      background: linear-gradient(90deg, var(--orange), var(--red));
+    }
+
+    /* Resources */
+    .resources-bar {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .resource-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      min-width: 120px;
+    }
+
+    .resource-item.critical {
+      border-color: var(--red);
+      animation: dangerPulse 2s infinite;
+    }
+
+    .resource-icon {
+      font-size: 1.25rem;
+    }
+
+    .resource-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .resource-name {
+      font-size: 0.625rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .resource-value {
+      font-size: 1.125rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .resource-change {
+      font-size: 0.625rem;
+      margin-left: 4px;
+    }
+
+    .resource-change.positive {
+      color: var(--green);
+    }
+
+    .resource-change.negative {
+      color: var(--red);
+    }
+
+    /* Action Points */
+    .action-points {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, rgba(201, 168, 108, 0.15), rgba(201, 168, 108, 0.05));
+      border: 1px solid var(--gold);
+      border-radius: 12px;
+    }
+
+    .ap-icon {
+      font-size: 1.5rem;
+    }
+
+    .ap-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ap-label {
+      font-size: 0.625rem;
+      color: var(--gold);
+    }
+
+    .ap-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    /* Game Board */
+    .game-board {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .game-board {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Main Area */
+    .main-area {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Threat Level */
+    .threat-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .threat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .threat-header h3 {
+      font-size: 1rem;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .threat-level {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .threat-level.low {
+      background: var(--green-dark);
+      color: var(--green);
+    }
+
+    .threat-level.medium {
+      background: rgba(249, 115, 22, 0.2);
+      color: var(--orange);
+    }
+
+    .threat-level.high {
+      background: var(--red-dark);
+      color: var(--red);
+      animation: dangerPulse 2s infinite;
+    }
+
+    .threat-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .threat-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .threat-name {
+      width: 80px;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .threat-bar-bg {
+      flex: 1;
+      height: 12px;
+      background: var(--bg-secondary);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .threat-bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 0.5s ease;
+    }
+
+    .threat-bar-fill.noble {
+      background: linear-gradient(90deg, var(--blue), var(--purple));
+    }
+
+    .threat-bar-fill.enemy {
+      background: linear-gradient(90deg, var(--orange), var(--red));
+    }
+
+    .threat-bar-fill.corruption {
+      background: linear-gradient(90deg, #666, #999);
+    }
+
+    .threat-value {
+      width: 40px;
+      text-align: right;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    /* Policy Cards */
+    .policies-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .section-header h2 {
+      font-size: 1.25rem;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-badge {
+      padding: 4px 12px;
+      background: var(--bg-secondary);
+      border-radius: 20px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .policies-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .policy-card {
+      background: var(--bg-secondary);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .policy-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--gold);
+      transform: scaleX(0);
+      transition: transform 0.3s;
+    }
+
+    .policy-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .policy-card:hover {
+      border-color: var(--gold);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .policy-card.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .policy-card.disabled:hover {
+      transform: none;
+      border-color: var(--border);
+      box-shadow: none;
+    }
+
+    .policy-card.disabled::before {
+      display: none;
+    }
+
+    .policy-card.implemented {
+      border-color: var(--green);
+      background: rgba(34, 197, 94, 0.05);
+    }
+
+    .policy-card.implemented::before {
+      background: var(--green);
+      transform: scaleX(1);
+    }
+
+    .policy-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .policy-name {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-family: 'Noto Serif SC', serif;
+    }
+
+    .policy-card.implemented .policy-name {
+      color: var(--green);
+    }
+
+    .policy-cost {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: rgba(201, 168, 108, 0.15);
+      border-radius: 4px;
+      font-size: 0.75rem;
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    .policy-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+
+    .policy-effects {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .effect-tag {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .effect-tag.positive {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--green);
+    }
+
+    .effect-tag.negative {
+      background: rgba(220, 38, 38, 0.15);
+      color: var(--red);
+    }
+
+    .effect-tag.neutral {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--blue);
+    }
+
+    .policy-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .policy-year {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .success-rate {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .success-rate.high {
+      color: var(--green);
+    }
+
+    .success-rate.medium {
+      color: var(--orange);
+    }
+
+    .success-rate.low {
+      color: var(--red);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .panel h3 {
+      font-size: 1rem;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Event Log */
+    .event-log {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .event-item {
+      padding: 12px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border-left: 3px solid var(--gold);
+    }
+
+    .event-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .event-item.danger {
+      border-left-color: var(--red);
+      background: rgba(220, 38, 38, 0.05);
+    }
+
+    .event-item.success {
+      border-left-color: var(--green);
+      background: rgba(34, 197, 94, 0.05);
+    }
+
+    .event-turn {
+      font-size: 0.625rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .event-text {
+      font-size: 0.875rem;
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+
+    /* End Turn Button */
+    .end-turn-panel {
+      background: linear-gradient(135deg, rgba(201, 168, 108, 0.15), rgba(201, 168, 108, 0.05));
+      border: 1px solid var(--gold);
+    }
+
+    .end-turn-panel p {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .btn-end-turn {
+      width: 100%;
+      padding: 16px;
+      background: var(--gold);
+      color: var(--bg-primary);
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-end-turn:hover {
+      background: var(--gold-light);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(201, 168, 108, 0.3);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .modal-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      max-width: 500px;
+      width: 100%;
+      padding: 24px;
+      animation: slideUp 0.3s ease;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .modal-header h2 {
+      font-size: 1.5rem;
+      color: var(--text-primary);
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .modal-close:hover {
+      color: var(--text-primary);
+    }
+
+    .modal-section {
+      margin-bottom: 20px;
+    }
+
+    .modal-section h4 {
+      font-size: 0.875rem;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+
+    .modal-section p {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .risk-warning {
+      padding: 16px;
+      background: rgba(220, 38, 38, 0.1);
+      border: 1px solid rgba(220, 38, 38, 0.3);
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .risk-warning h4 {
+      color: var(--red);
+      margin-bottom: 8px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .modal-actions .btn {
+      flex: 1;
+    }
+
+    /* Event Modal */
+    .event-modal .modal-content {
+      max-width: 600px;
+      border-color: var(--red);
+    }
+
+    .event-modal.danger .modal-content {
+      animation: shake 0.5s ease;
+    }
+
+    .event-title {
+      font-size: 1.5rem;
+      color: var(--red);
+      margin-bottom: 8px;
+    }
+
+    .event-desc {
+      font-size: 1rem;
+      color: var(--text-primary);
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .event-choices {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .choice-btn {
+      text-align: left;
+      padding: 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .choice-btn:hover {
+      border-color: var(--gold);
+      background: var(--bg-hover);
+    }
+
+    .choice-text {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .choice-consequence {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Game Over */
+    .game-over {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      background: var(--bg-primary);
+    }
+
+    .game-over-content {
+      max-width: 700px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .result-badge {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 32px;
+      font-size: 4rem;
+      font-weight: 700;
+      animation: pulse 2s infinite;
+    }
+
+    .result-badge.victory {
+      background: linear-gradient(135deg, var(--green), #166534);
+      color: white;
+      box-shadow: 0 0 60px rgba(34, 197, 94, 0.4);
+    }
+
+    .result-badge.defeat {
+      background: linear-gradient(135deg, var(--red), #7f1d1d);
+      color: white;
+      box-shadow: 0 0 60px rgba(220, 38, 38, 0.4);
+    }
+
+    .game-over h1 {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+    }
+
+    .game-over h1.victory {
+      color: var(--green);
+    }
+
+    .game-over h1.defeat {
+      color: var(--red);
+    }
+
+    .game-over p {
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: relative;
+    }
+
+    .tooltip:hover::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: var(--text-primary);
+      white-space: nowrap;
+      z-index: 10;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #444;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useCallback } = React;
+
+    // Icons as components
+    const Icons = {
+      Crown: () => '👑',
+      Heart: () => '❤️',
+      Users: () => '👥',
+      Sword: () => '⚔️',
+      Coin: () => '🪙',
+      Wheat: () => '🌾',
+      Scroll: () => '📜',
+      Alert: () => '⚠️',
+      Fire: () => '🔥',
+      Skull: () => '💀',
+      Star: () => '⭐',
+      Check: () => '✓',
+      Lock: () => '🔒',
+      AP: () => '⚡',
+      Time: () => '⏳',
+      Danger: () => '🚨',
+    };
+
+    // Game Constants
+    const MAX_TURNS = 20;
+    const AP_PER_TURN = 3;
+    
+    const INITIAL_STATE = {
+      turn: 1,
+      year: 356,
+      actionPoints: 3,
+      
+      // Core Resources
+      gold: 100,
+      food: 100,
+      population: 50,
+      
+      // Power Metrics
+      nationalPower: 20,
+      military: 15,
+      publicSupport: 40,
+      
+      // Threats
+      nobleDiscontent: 20,
+      enemyThreat: 10,
+      corruption: 10,
+      
+      // Progress
+      reformsCompleted: 0,
+      totalReforms: 8,
+      
+      // Status
+      gameOver: false,
+      victory: false,
+      reason: '',
+      
+      // Events
+      eventHistory: [],
+      currentEvent: null,
+      selectedPolicy: null,
+    };
+
+    // Policies Data
+    const POLICIES = [
+      {
+        id: 'move-wood',
+        name: '徙木立信',
+        desc: '悬赏搬木者，树立政府威信',
+        detail: '在国都南门立三丈之木，募民有能徙置北门者予十金。以此明令出必行，取信于民。',
+        cost: { ap: 1, gold: 20 },
+        effects: { publicSupport: 15, nationalPower: 5 },
+        risk: 0,
+        required: [],
+        year: 356,
+      },
+      {
+        id: 'reward-military',
+        name: '奖励军功',
+        desc: '按军功授爵，打破世袭',
+        detail: '废除世卿世禄制，宗室非有军功不得属籍。有功者显荣，无功者虽富无所芬华。',
+        cost: { ap: 2, gold: 40 },
+        effects: { military: 25, nationalPower: 10, nobleDiscontent: 15 },
+        risk: 20,
+        required: ['move-wood'],
+        year: 356,
+      },
+      {
+        id: 'collective-responsibility',
+        name: '什伍连坐',
+        desc: '五家为伍，有罪连坐',
+        detail: '令民为什伍，而相牧司连坐。不告奸者腰斩，告奸者与斩敌首同赏。',
+        cost: { ap: 1, gold: 10 },
+        effects: { nationalPower: 10, publicSupport: -5, corruption: -5 },
+        risk: 10,
+        required: ['move-wood'],
+        year: 356,
+      },
+      {
+        id: 'agriculture-first',
+        name: '重农抑商',
+        desc: '奖励耕织，抑制商业',
+        detail: '僇力本业，耕织致粟帛多者复其身。事末利及怠而贫者，举以为收孥。',
+        cost: { ap: 1, gold: 20 },
+        effects: { food: 50, gold: 20, population: 10, publicSupport: 5 },
+        risk: 5,
+        required: ['move-wood'],
+        year: 356,
+      },
+      {
+        id: 'abolish-jingtian',
+        name: '废井田',
+        desc: '开阡陌，许土地买卖',
+        detail: '为田开阡陌封疆，而赋税平。决裂阡陌，教民耕战，使民得买卖土地。',
+        cost: { ap: 3, gold: 60 },
+        effects: { nationalPower: 20, food: 30, nobleDiscontent: 25, publicSupport: 10 },
+        risk: 35,
+        required: ['agriculture-first'],
+        year: 350,
+      },
+      {
+        id: 'county-system',
+        name: '推行县制',
+        desc: '废分封，设郡县',
+        detail: '集小乡邑聚为县，置令、丞，凡三十一县。县制之设，使中央集权。',
+        cost: { ap: 2, gold: 50 },
+        effects: { nationalPower: 15, corruption: -10, nobleDiscontent: 20 },
+        risk: 25,
+        required: ['reward-military'],
+        year: 350,
+      },
+      {
+        id: 'unify-measures',
+        name: '统一度量衡',
+        desc: '平斗桶、权衡、丈尺',
+        detail: '一法度、衡石、丈尺，车同轨，书同文。使天下通商，赋税公平。',
+        cost: { ap: 1, gold: 30 },
+        effects: { gold: 40, nationalPower: 10, corruption: -5 },
+        risk: 5,
+        required: ['county-system'],
+        year: 350,
+      },
+      {
+        id: 'move-capital',
+        name: '迁都咸阳',
+        desc: '东进中原，霸业之始',
+        detail: '秦都东迁咸阳，据崤函之固，拥雍州之地，东向以制诸侯。',
+        cost: { ap: 3, gold: 80 },
+        effects: { nationalPower: 20, military: 15, enemyThreat: 10 },
+        risk: 15,
+        required: ['abolish-jingtian', 'county-system'],
+        year: 350,
+      },
+    ];
+
+    // Random Events
+    const RANDOM_EVENTS = [
+      {
+        id: 'noble-revolt',
+        title: '贵族叛乱！',
+        desc: '旧贵族不满变法，暗中串联，意图谋反！',
+        type: 'danger',
+        choices: [
+          { text: '铁腕镇压，诛杀首恶', effect: () => ({ nobleDiscontent: -20, publicSupport: -5, gold: -30 }), desc: '叛乱平息，但血流成河' },
+          { text: '妥协退让，暂缓变法', effect: () => ({ nobleDiscontent: -10, nationalPower: -10, reformsCompleted: -1 }), desc: '叛乱暂缓，但变法受挫' },
+        ],
+      },
+      {
+        id: 'wei-invasion',
+        title: '魏国入侵！',
+        desc: '魏国趁秦国内乱，发兵十万来犯！',
+        type: 'danger',
+        choices: [
+          { text: '倾国之力，决一死战', effect: (s) => ({ military: -15, gold: -40, enemyThreat: -10, nationalPower: s.military > 40 ? 10 : -10 }), desc: '伤亡惨重，但守住了国土' },
+          { text: '割地求和，保存实力', effect: () => ({ gold: -20, nationalPower: -15, publicSupport: -10 }), desc: '割让三城，国威受损' },
+        ],
+      },
+      {
+        id: 'famine',
+        title: '关中大旱',
+        desc: '连年大旱，庄稼枯死，百姓流离失所！',
+        type: 'danger',
+        choices: [
+          { text: '开仓放粮，赈济灾民', effect: () => ({ food: -50, gold: -30, publicSupport: 15 }), desc: '百姓感恩，但国库空虚' },
+          { text: '加征赋税，购买粮食', effect: () => ({ gold: -20, publicSupport: -20, nobleDiscontent: 10 }), desc: '民怨沸腾，局势危急' },
+        ],
+      },
+      {
+        id: 'corruption-scandal',
+        title: '贪腐丑闻',
+        desc: '查出多名官员贪污受贿，民愤极大！',
+        type: 'warning',
+        choices: [
+          { text: '严惩不贷，以儆效尤', effect: () => ({ corruption: -15, gold: 20, nobleDiscontent: 5 }), desc: '贪官伏法，朝野震动' },
+          { text: '从轻发落，以稳朝局', effect: () => ({ corruption: 5, publicSupport: -10 }), desc: '百姓失望，贪腐更甚' },
+        ],
+      },
+      {
+        id: 'merchant-opportunity',
+        title: '商队来访',
+        desc: '西域商队带来珍稀货物，愿与秦国贸易',
+        type: 'good',
+        choices: [
+          { text: '热情接待，通商互利', effect: () => ({ gold: 40, nationalPower: 5 }), desc: '贸易繁荣，国库充盈' },
+          { text: '征收重税，充实国库', effect: () => ({ gold: 60, publicSupport: -5 }), desc: '税收增加，但商人不满' },
+        ],
+      },
+      {
+        id: 'talent-arrival',
+        title: '贤才投奔',
+        desc: '听闻秦国变法，各国人才纷纷来投',
+        type: 'good',
+        choices: [
+          { text: '破格录用，委以重任', effect: () => ({ nationalPower: 10, gold: -10, nobleDiscontent: 5 }), desc: '人才济济，国势日盛' },
+          { text: '谨慎考察，择优录用', effect: () => ({ nationalPower: 5 }), desc: '稳妥用人，但错失良才' },
+        ],
+      },
+      {
+        id: 'crown-prince-crime',
+        title: '太子犯法',
+        desc: '太子驷触犯新法，按律当刑。但太子是储君，不可施刑于身。其师傅公子虔、公孙贾代为受刑。你将如何处置？',
+        type: 'danger',
+        choices: [
+          { text: '师傅受劓刑，杀鸡儆猴', effect: () => ({ publicSupport: 20, nobleDiscontent: 30, nationalPower: 10 }), desc: '新法威信大增，但贵族惊恐' },
+          { text: '师傅受黥刑，稍留余地', effect: () => ({ publicSupport: 10, nobleDiscontent: 20, nationalPower: 5 }), desc: '法度既明，略有人情' },
+          { text: '仅罚俸禄，维持关系', effect: () => ({ publicSupport: -10, nobleDiscontent: -5 }), desc: '贵族稍安，但法度受疑' },
+        ],
+      },
+      {
+        id: 'ganlong-petition',
+        title: '甘龙杜挚上书',
+        desc: '旧贵族领袖甘龙、杜挚联合上书秦孝公，引经据典，称"法古无过，循礼无邪"，强烈要求停止变法。',
+        type: 'danger',
+        choices: [
+          { text: '当庭驳斥，坚持变法', effect: () => ({ nationalPower: 15, nobleDiscontent: 25, publicSupport: 5 }), desc: '驳倒守旧派，变法继续' },
+          { text: '暂时退让，缓行部分法令', effect: () => ({ nobleDiscontent: -10, nationalPower: -10, publicSupport: -5 }), desc: '局势暂缓，但变法受阻' },
+        ],
+      },
+      {
+        id: 'hexi-battle',
+        title: '河西之战',
+        desc: '秦军在军功爵制激励下士气大振，于河西与魏军展开决战！这是检验变法成果的重要时刻。',
+        type: 'good',
+        choices: [
+          { text: '全力进攻，收复河西', effect: (s) => ({ military: -10, nationalPower: s.military > 30 ? 25 : 10, enemyThreat: -15, gold: 30 }), desc: '大获全胜，国威大振！' },
+          { text: '谨慎行事，保存实力', effect: () => ({ military: -5, nationalPower: 5, gold: 10 }), desc: '小胜一场，稳扎稳打' },
+        ],
+      },
+      {
+        id: 'qin-xiao-gong-ill',
+        title: '秦孝公病重',
+        desc: '秦孝公突发重病，朝野震动。太子年幼，贵族蠢蠢欲动，你该如何应对？',
+        type: 'danger',
+        choices: [
+          { text: '亲自侍疾，表忠心', effect: () => ({ nobleDiscontent: 5, publicSupport: 10, gold: -20 }), desc: '孝公感念，但贵族疑虑' },
+          { text: '加紧变法，趁势推进', effect: () => ({ nationalPower: 10, nobleDiscontent: 20, reformsCompleted: 1 }), desc: '变法加速，但风险陡增' },
+        ],
+      },
+      {
+        id: 'peasant-uprising',
+        title: '农民起义',
+        desc: '苛政之下，关中农民不堪重负，揭竿而起！',
+        type: 'danger',
+        choices: [
+          { text: '武力镇压，杀一儆百', effect: () => ({ publicSupport: -20, military: -5, gold: -20 }), desc: '起义平息，但民怨更深' },
+          { text: '减免赋税，安抚民心', effect: () => ({ publicSupport: 15, gold: -30, food: -20 }), desc: '民怨稍平，但国库受损' },
+        ],
+      },
+    ];
+
+    // Helper Functions
+    const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+    
+    const canAfford = (state, cost) => {
+      return state.actionPoints >= (cost.ap || 0) && 
+             state.gold >= (cost.gold || 0) &&
+             state.food >= (cost.food || 0);
+    };
+
+    const checkRequirements = (state, policy) => {
+      if (policy.required.length === 0) return true;
+      const completedIds = state.completedPolicies || [];
+      return policy.required.every(id => completedIds.includes(id));
+    };
+
+    // Components
+    const IntroScene = ({ onStart }) => (
+      <div className="intro">
+        <div className="intro-content">
+          {/* 图标 */}
+          <div className="intro-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+              <line x1="8" y1="7" x2="16" y2="7" />
+              <line x1="8" y1="11" x2="14" y2="11" />
+              <line x1="8" y1="15" x2="12" y2="15" />
+            </svg>
+          </div>
+
+          {/* 标题 */}
+          <div className="intro-header">
+            <h1 className="intro-title">商鞅变法</h1>
+            <p className="intro-subtitle">公元前356年 - 公元前350年</p>
+          </div>
+
+          {/* 剧情介绍卡片 */}
+          <div className="intro-card">
+            <p>战国七雄争霸，诸侯逐鹿中原。秦国地处西陲，制度落后，国力衰弱，为山东六国所轻。秦孝公继位后，愤而求贤，欲图强秦。</p>
+            <p>商鞅携李悝《法经》入秦，提出<strong>"治世不一道，便国不法古"</strong>的变法理念，深得孝公信任，被任为左庶长，主持变法。</p>
+            <p><strong>徙木立信</strong>立威于民，<strong>废井田、开阡陌</strong>解放生产力，<strong>奖励军功</strong>激发将士斗志。然变法触动旧贵族利益，阻力重重。</p>
+            <p>你将扮演<strong>商鞅</strong>，在复杂的环境中推行变法，平衡各方势力，应对历史事件，最终实现富国强兵的目标。</p>
+          </div>
+
+          {/* 玩法标签 */}
+          <div className="intro-tags">
+            <span className="intro-tag">推行变法政策</span>
+            <span className="intro-tag">应对历史事件</span>
+            <span className="intro-tag">平衡各方势力</span>
+            <span className="intro-tag">改写秦国命运</span>
+          </div>
+
+          {/* 开始按钮 */}
+          <button className="intro-btn" onClick={onStart}>
+            开始变法
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+
+        {/* 规则说明 */}
+        <div className="intro-rules">
+          <div className="intro-rules-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4M12 8h.01" />
+            </svg>
+            胜利条件
+          </div>
+          <div className="intro-rules-item">
+            <span>•</span> 在 <span>20回合</span> 内完成至少 <span>6次</span> 改革
+          </div>
+          <div className="intro-rules-item">
+            <span>•</span> 国力值达到 <span>80</span> 以上
+          </div>
+          <div className="intro-rules-item">
+            <span>•</span> 民心、贵族不满等指标未触及失败线
+          </div>
+        </div>
+      </div>
+    );
+
+    const GameHeader = ({ state }) => {
+      const timeProgress = (state.turn / MAX_TURNS) * 100;
+      
+      return (
+        <header className="game-header">
+          <div className="header-content">
+            <div className="header-left">
+              <div className="turn-info">
+                <span className="turn-label">回合 / 年份</span>
+                <span className="turn-value">{state.turn} / 公元前{state.year}年</span>
+              </div>
+              <div>
+                <div className="progress-bar">
+                  <div 
+                    className={`progress-fill ${timeProgress > 75 ? 'danger' : 'time'}`}
+                    style={{ width: `${timeProgress}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="resources-bar">
+              <div className={`resource-item ${state.gold < 30 ? 'critical' : ''}`}>
+                <span className="resource-icon"><Icons.Coin /></span>
+                <div className="resource-info">
+                  <span className="resource-name">国库</span>
+                  <span className="resource-value" style={{ color: '#c9a86c' }}>{state.gold}</span>
+                </div>
+              </div>
+              <div className={`resource-item ${state.food < 30 ? 'critical' : ''}`}>
+                <span className="resource-icon"><Icons.Wheat /></span>
+                <div className="resource-info">
+                  <span className="resource-name">粮草</span>
+                  <span className="resource-value" style={{ color: '#22c55e' }}>{state.food}</span>
+                </div>
+              </div>
+              <div className="resource-item">
+                <span className="resource-icon"><Icons.Users /></span>
+                <div className="resource-info">
+                  <span className="resource-name">人口</span>
+                  <span className="resource-value" style={{ color: '#3b82f6' }}>{state.population}万</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="action-points">
+              <span className="ap-icon"><Icons.AP /></span>
+              <div className="ap-info">
+                <span className="ap-label">行动点</span>
+                <span className="ap-value">{state.actionPoints} / {AP_PER_TURN}</span>
+              </div>
+            </div>
+          </div>
+        </header>
+      );
+    };
+
+    const ThreatPanel = ({ state }) => {
+      const getThreatLevel = (val) => {
+        if (val < 40) return { class: 'low', text: '稳定' };
+        if (val < 70) return { class: 'medium', text: '危险' };
+        return { class: 'high', text: '危急' };
+      };
+
+      const threats = [
+        { name: '贵族不满', value: state.nobleDiscontent, key: 'noble' },
+        { name: '外敌威胁', value: state.enemyThreat, key: 'enemy' },
+        { name: '贪腐程度', value: state.corruption, key: 'corruption' },
+      ];
+
+      const maxThreat = Math.max(state.nobleDiscontent, state.enemyThreat, state.corruption);
+      const level = getThreatLevel(maxThreat);
+
+      return (
+        <div className="threat-panel">
+          <div className="threat-header">
+            <h3><Icons.Danger /> 局势稳定度</h3>
+            <span className={`threat-level ${level.class}`}>{level.text}</span>
+          </div>
+          <div className="threat-bars">
+            {threats.map(t => (
+              <div key={t.key} className="threat-item">
+                <span className="threat-name">{t.name}</span>
+                <div className="threat-bar-bg">
+                  <div className={`threat-bar-fill ${t.key}`} style={{ width: `${clamp(t.value, 0, 100)}%` }} />
+                </div>
+                <span className="threat-value" style={{ 
+                  color: t.value > 70 ? '#dc2626' : t.value > 40 ? '#f97316' : '#22c55e' 
+                }}>{t.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    const PolicyCard = ({ policy, state, onClick }) => {
+      const completedIds = state.completedPolicies || [];
+      const isImplemented = completedIds.includes(policy.id);
+      const canAffordPolicy = canAfford(state, policy.cost);
+      const requirementsMet = checkRequirements(state, policy);
+      const isDisabled = isImplemented || !canAffordPolicy || !requirementsMet;
+
+      const getSuccessRate = () => {
+        if (policy.risk === 0) return { text: '必成', class: 'high' };
+        if (policy.risk < 15) return { text: '高', class: 'high' };
+        if (policy.risk < 30) return { text: '中', class: 'medium' };
+        return { text: '低', class: 'low' };
+      };
+
+      const rate = getSuccessRate();
+      
+      // 计算金币成本和收益
+      const goldCost = policy.cost.gold || 0;
+      const goldGain = policy.effects.gold || 0;
+      const hasGoldEffect = goldCost > 0 || goldGain > 0;
+
+      return (
+        <div 
+          className={`policy-card ${isImplemented ? 'implemented' : ''} ${isDisabled ? 'disabled' : ''}`}
+          onClick={() => !isDisabled && onClick(policy)}
+        >
+          <div className="policy-header">
+            <h3 className="policy-name">{policy.name}</h3>
+            <span className="policy-cost">
+              <Icons.AP /> {policy.cost.ap}
+              {goldCost > 0 && <span style={{ marginLeft: '4px' }}>· {goldCost}金</span>}
+            </span>
+          </div>
+          <p className="policy-desc">{policy.desc}</p>
+          <div className="policy-effects">
+            {Object.entries(policy.effects).map(([key, val]) => {
+              if (!val) return null;
+              const labels = { 
+                nationalPower: '国力', military: '军力', publicSupport: '民心',
+                food: '粮草', gold: '金钱', population: '人口',
+                nobleDiscontent: '贵族不满', enemyThreat: '外敌', corruption: '贪腐'
+              };
+              const isNeg = key.includes('Discontent') || key.includes('Threat') || key.includes('corruption');
+              return (
+                <span key={key} className={`effect-tag ${isNeg ? 'negative' : 'positive'}`}>
+                  {labels[key] || key} {val > 0 ? '+' : ''}{val}
+                </span>
+              );
+            })}
+          </div>
+          <div className="policy-footer">
+            <span className="policy-year">公元前{policy.year}年</span>
+            {!isImplemented && (
+              <span className={`success-rate ${rate.class}`}>
+                成功率: {rate.text}
+              </span>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const PolicyModal = ({ policy, state, onClose, onImplement }) => {
+      if (!policy) return null;
+      
+      const [result, setResult] = useState(null);
+      
+      const handleImplement = () => {
+        const roll = Math.random() * 100;
+        const success = roll > policy.risk;
+        setResult({ success, roll });
+      };
+
+      const handleClose = () => {
+        if (result) {
+          onImplement(policy, result.success);
+          setResult(null);
+        }
+        onClose();
+      };
+
+      return (
+        <div className="modal-overlay" onClick={onClose}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{policy.name}</h2>
+              <button className="modal-close" onClick={onClose}>×</button>
+            </div>
+            
+            <div className="modal-section">
+              <h4>政策详情</h4>
+              <p>{policy.detail}</p>
+            </div>
+
+            {policy.risk > 0 && (
+              <div className="risk-warning">
+                <h4><Icons.Alert /> 风险提示</h4>
+                <p>此政策有 {policy.risk}% 的失败风险。若失败，将损失资源且可能引发贵族不满。</p>
+              </div>
+            )}
+
+            {result ? (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '16px' }}>
+                  {result.success ? <Icons.Check /> : <Icons.Fire />}
+                </div>
+                <h3 style={{ color: result.success ? '#22c55e' : '#dc2626', marginBottom: '20px' }}>
+                  {result.success ? '推行成功！' : '推行失败！'}
+                </h3>
+                <button className="btn btn-gold" onClick={handleClose}>
+                  确定
+                </button>
+              </div>
+            ) : (
+              <div className="modal-actions">
+                <button className="btn btn-outline" onClick={onClose}>再考虑</button>
+                <button className="btn btn-gold" onClick={handleImplement}>
+                  <Icons.AP /> 推行 ({policy.cost.ap} AP)
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const EventModal = ({ event, onChoice }) => {
+      if (!event) return null;
+      return (
+        <div className={`modal-overlay event-modal ${event.type === 'danger' ? 'danger' : ''}`}>
+          <div className="modal-content">
+            <h2 className="event-title"><Icons.Danger /> {event.title}</h2>
+            <p className="event-desc">{event.desc}</p>
+            <div className="event-choices">
+              {event.choices.map((choice, idx) => (
+                <button key={idx} className="choice-btn" onClick={() => onChoice(choice)}>
+                  <span className="choice-text">{choice.text}</span>
+                  <span className="choice-consequence">{choice.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const GameOver = ({ state, onRestart }) => {
+      const isVictory = state.victory;
+      
+      return (
+        <div className="game-over">
+          <div className="game-over-content">
+            <div className={`result-badge ${isVictory ? 'victory' : 'defeat'}`}>
+              {isVictory ? <Icons.Star /> : <Icons.Skull />}
+            </div>
+            <h1 className={isVictory ? 'victory' : 'defeat'}>
+              {isVictory ? '变法大成！' : '变法失败'}
+            </h1>
+            <p>{state.reason}</p>
+            
+            <div className="stats-grid">
+              <div className="stat-card">
+                <div className="stat-value">{state.reformsCompleted}</div>
+                <div className="stat-label">完成改革</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">{state.nationalPower}</div>
+                <div className="stat-label">最终国力</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">{state.turn}</div>
+                <div className="stat-label">消耗回合</div>
+              </div>
+            </div>
+            
+            <button className="btn btn-gold btn-large" onClick={onRestart}>
+              <Icons.Crown /> 重新开始
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    // Main Game Component
+    const App = () => {
+      const [state, setState] = useState({ ...INITIAL_STATE, completedPolicies: [] });
+      const [showPolicy, setShowPolicy] = useState(null);
+      const [showEvent, setShowEvent] = useState(null);
+
+      const checkGameEnd = useCallback((newState) => {
+        if (newState.turn > MAX_TURNS) {
+          if (newState.reformsCompleted >= 6 && newState.nationalPower >= 80) {
+            return { gameOver: true, victory: true, reason: '你在20回合内完成了变法大业！秦国从此强盛，为日后统一六国奠定基础。' };
+          }
+          return { gameOver: true, victory: false, reason: '时间耗尽，变法未能完成。秦国继续积弱，最终被六国所灭。' };
+        }
+        if (newState.publicSupport <= 0) {
+          return { gameOver: true, victory: false, reason: '民心尽失，百姓揭竿而起！你被愤怒的民众杀死，变法彻底失败。' };
+        }
+        if (newState.nobleDiscontent >= 100) {
+          return { gameOver: true, victory: false, reason: '贵族发动政变！你被车裂处死，新法被废，一切努力化为乌有。' };
+        }
+        if (newState.reformsCompleted >= 6 && newState.nationalPower >= 80) {
+          return { gameOver: true, victory: true, reason: '变法大成！秦国国力日盛，成为战国霸主，为统一六国奠定基础。' };
+        }
+        return { gameOver: false };
+      }, []);
+
+      const implementPolicy = (policy, success) => {
+        setState(prev => {
+          const newState = { ...prev };
+          
+          // Deduct costs
+          newState.actionPoints -= policy.cost.ap;
+          newState.gold -= policy.cost.gold || 0;
+          newState.food -= policy.cost.food || 0;
+          
+          if (success) {
+            // Apply effects
+            Object.entries(policy.effects).forEach(([key, val]) => {
+              if (newState[key] !== undefined) {
+                newState[key] = clamp(newState[key] + val, 0, 200);
+              }
+            });
+            newState.reformsCompleted++;
+            newState.completedPolicies = [...newState.completedPolicies, policy.id];
+            newState.eventHistory = [`✓ 推行${policy.name}成功`, ...newState.eventHistory].slice(0, 10);
+          } else {
+            // Failure consequences
+            newState.nobleDiscontent = clamp(newState.nobleDiscontent + 10, 0, 100);
+            newState.gold = clamp(newState.gold - 10, 0, 999);
+            newState.eventHistory = [`✗ ${policy.name}推行失败，贵族不满增加`, ...newState.eventHistory].slice(0, 10);
+          }
+          
+          setShowPolicy(null);
+          
+          const endCheck = checkGameEnd(newState);
+          if (endCheck.gameOver) {
+            return { ...newState, ...endCheck };
+          }
+          
+          return newState;
+        });
+      };
+
+      const endTurn = () => {
+        setState(prev => {
+          let newState = { 
+            ...prev, 
+            turn: prev.turn + 1, 
+            year: prev.year - 1,
+            actionPoints: AP_PER_TURN,
+          };
+          
+          // Passive changes
+          newState.food = clamp(newState.food - 5, 0, 999);
+          newState.gold = clamp(newState.gold + 5, 0, 999);
+          newState.corruption = clamp(newState.corruption + 2, 0, 100);
+          
+          // Random event
+          if (Math.random() < 0.4) {
+            const event = RANDOM_EVENTS[Math.floor(Math.random() * RANDOM_EVENTS.length)];
+            setShowEvent(event);
+          }
+          
+          const endCheck = checkGameEnd(newState);
+          if (endCheck.gameOver) {
+            return { ...newState, ...endCheck };
+          }
+          
+          return newState;
+        });
+      };
+
+      const handleEventChoice = (choice) => {
+        setState(prev => {
+          const effects = choice.effect(prev);
+          const newState = { ...prev };
+          
+          Object.entries(effects).forEach(([key, val]) => {
+            if (newState[key] !== undefined) {
+              newState[key] = clamp(newState[key] + val, 0, 999);
+            }
+          });
+          
+          newState.eventHistory = [`! ${choice.desc}`, ...newState.eventHistory].slice(0, 10);
+          setShowEvent(null);
+          
+          const endCheck = checkGameEnd(newState);
+          if (endCheck.gameOver) {
+            return { ...newState, ...endCheck };
+          }
+          
+          return newState;
+        });
+      };
+
+      const restart = () => {
+        setState({ ...INITIAL_STATE, completedPolicies: [] });
+        setShowPolicy(null);
+        setShowEvent(null);
+      };
+
+      if (state.gameOver) {
+        return <GameOver state={state} onRestart={restart} />;
+      }
+
+      if (state.turn === 0) {
+        return <IntroScene onStart={() => setState({ ...state, turn: 1 })} />;
+      }
+
+      const availablePolicies = POLICIES.filter(p => {
+        const completed = state.completedPolicies || [];
+        return !completed.includes(p.id) && checkRequirements(state, p);
+      });
+
+      const completedPolicies = POLICIES.filter(p => {
+        const completed = state.completedPolicies || [];
+        return completed.includes(p.id);
+      });
+
+      return (
+        <>
+          <GameHeader state={state} />
+          
+          <div className="game-board">
+            <div className="main-area">
+              <ThreatPanel state={state} />
+              
+              <div className="policies-section">
+                <div className="section-header">
+                  <h2><Icons.Scroll /> 变法政策</h2>
+                  <span className="section-badge">
+                    已完成: {state.reformsCompleted} / {state.totalReforms}
+                  </span>
+                </div>
+                <div className="policies-grid">
+                  {availablePolicies.map(policy => (
+                    <PolicyCard 
+                      key={policy.id} 
+                      policy={policy} 
+                      state={state}
+                      onClick={setShowPolicy}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {completedPolicies.length > 0 && (
+                <div className="policies-section" style={{ border: '1px solid #22c55e', background: 'rgba(34, 197, 94, 0.05)' }}>
+                  <div className="section-header">
+                    <h2><Icons.Check /> 已推行政策</h2>
+                    <span className="section-badge" style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#22c55e' }}>
+                      {completedPolicies.length} 项
+                    </span>
+                  </div>
+                  <div className="policies-grid">
+                    {completedPolicies.map(policy => (
+                      <PolicyCard 
+                        key={policy.id} 
+                        policy={policy} 
+                        state={state}
+                        onClick={setShowPolicy}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="sidebar">
+              <div className="panel end-turn-panel">
+                <h3><Icons.Time /> 回合控制</h3>
+                <p>剩余行动点: {state.actionPoints}</p>
+                <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '8px' }}>
+                  结束回合将推进时间，并可能触发随机事件
+                </p>
+                <button 
+                  className="btn-end-turn" 
+                  onClick={endTurn}
+                  disabled={showEvent !== null}
+                >
+                  结束回合 <Icons.Time />
+                </button>
+              </div>
+
+              <div className="panel">
+                <h3><Icons.Alert /> 事件记录</h3>
+                <div className="event-log">
+                  {state.eventHistory.length === 0 ? (
+                    <p style={{ color: '#666', fontSize: '0.875rem' }}>暂无事件</p>
+                  ) : (
+                    state.eventHistory.map((evt, i) => (
+                      <div key={i} className={`event-item ${evt.includes('!') ? 'danger' : evt.includes('✓') ? 'success' : ''}`}>
+                        <div className="event-turn">第{state.turn - i}回合</div>
+                        <div className="event-text">{evt}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="panel">
+                <h3><Icons.Crown /> 国家实力</h3>
+                <div className="threat-bars" style={{ marginTop: '12px' }}>
+                  <div className="threat-item">
+                    <span className="threat-name">国力</span>
+                    <div className="threat-bar-bg">
+                      <div className="threat-bar-fill noble" style={{ width: `${clamp(state.nationalPower, 0, 100)}%` }} />
+                    </div>
+                    <span className="threat-value" style={{ color: state.nationalPower >= 80 ? '#22c55e' : '#c9a86c' }}>
+                      {state.nationalPower}
+                    </span>
+                  </div>
+                  <div className="threat-item">
+                    <span className="threat-name">军力</span>
+                    <div className="threat-bar-bg">
+                      <div className="threat-bar-fill enemy" style={{ width: `${clamp(state.military, 0, 100)}%` }} />
+                    </div>
+                    <span className="threat-value" style={{ color: '#dc2626' }}>{state.military}</span>
+                  </div>
+                  <div className="threat-item">
+                    <span className="threat-name">民心</span>
+                    <div className="threat-bar-bg">
+                      <div className="threat-bar-fill" style={{ width: `${clamp(state.publicSupport, 0, 100)}%`, background: '#22c55e' }} />
+                    </div>
+                    <span className="threat-value" style={{ color: state.publicSupport < 30 ? '#dc2626' : '#22c55e' }}>
+                      {state.publicSupport}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="panel" style={{ borderColor: 'var(--gold)', background: 'rgba(201, 168, 108, 0.05)' }}>
+                <h3 style={{ color: 'var(--gold)' }}>胜利条件</h3>
+                <div style={{ marginTop: '12px', fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+                  <p style={{ marginBottom: '6px' }}>在 <strong style={{ color: 'var(--gold)' }}>20回合</strong> 内完成 <strong style={{ color: 'var(--gold)' }}>6次</strong> 改革</p>
+                  <p style={{ marginBottom: '6px' }}>国力值达到 <strong style={{ color: 'var(--gold)' }}>80</strong></p>
+                  <p style={{ marginBottom: '0' }}>则 <strong style={{ color: 'var(--green)' }}>变法成功</strong></p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {showPolicy && (
+            <PolicyModal 
+              policy={showPolicy} 
+              state={state}
+              onClose={() => setShowPolicy(null)}
+              onImplement={implementPolicy}
+            />
+          )}
+
+          {showEvent && (
+            <EventModal 
+              event={showEvent}
+              onChoice={handleEventChoice}
+            />
+          )}
+        </>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
